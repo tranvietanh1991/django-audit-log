@@ -23,6 +23,12 @@ def _enable_audit_log_managers(instance):
             pass
 
 
+def _disable_audit_log(instance):
+    instance.__disable_audit_log = True
+
+def _enable_audit_log(instance):
+    instance.__disable_audit_log = False
+
 class UserLoggingMiddleware(object):
     def process_request(self, request):
         if settings.DISABLE_AUDIT_LOG:
@@ -47,6 +53,7 @@ class UserLoggingMiddleware(object):
 
 
     def _update_pre_save_info(self, user, session, sender, instance, **kwargs):
+        if getattr(instance, '__disable_audit_log', False): return  # skip save audit for this instance
         registry = registration.FieldRegistry(fields.LastUserField)
         if sender in registry:
             for field in registry.get_fields(sender):
@@ -59,6 +66,7 @@ class UserLoggingMiddleware(object):
 
 
     def _update_post_save_info(self, user, session, sender, instance, created, **kwargs ):
+        if getattr(instance, '__disable_audit_log', False):return  # skip save audit for this instance
         if created:
             registry = registration.FieldRegistry(fields.CreatingUserField)
             if sender in registry:
